@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/go-Echelon/pkg/core/database"
+	"github.com/go-Echelon/go-Echelon/pkg/core/database"
 )
 
 func main() {
