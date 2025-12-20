@@ -6,18 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-Echelon/go-Echelon/pkg/delta/users/services"
 )
-
-// UserController holds the service needed for logic
-type UserController struct {
-	Service *services.UserService
-}
-
-// NewUserController creates a new controller instance
-func NewUserController(service *services.UserService) *UserController {
-	return &UserController{Service: service}
-}
 
 // SignUpRequest defines what we expect from the frontend
 type SignUpRequest struct {

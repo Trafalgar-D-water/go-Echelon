@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-Echelon/go-Echelon/pkg/core/database"
 	"github.com/go-Echelon/go-Echelon/pkg/delta/users"
@@ -28,6 +29,13 @@ func main() {
 	// Gin Setup
 	gin.SetMode(gin.DebugMode)
 	r := gin.New()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 
 	// Middleware
 	r.Use(gin.Logger())
