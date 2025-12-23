@@ -10,7 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// GetUserByID retrieves a user by their ID
 func (s *UserService) GetUserByID(ctx context.Context, id string) (*models.User, error) {
 	coll := s.db.Mongo.Database(s.db.DBName).Collection("users")
 

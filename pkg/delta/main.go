@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -11,12 +12,10 @@ import (
 )
 
 func main() {
-	// TODO: Load from config
-	mongoURI := "mongodb://localhost:27017"
-	dbName := "echelon_db"
-	port := "8080"
 
-	log.Println("🔌 Connecting to MongoDB...")
+	mongoURI := os.Getenv("MONGO_URI")
+	dbName := os.Getenv("DB_NAME")
+	port := os.Getenv("PORT")
 
 	db, err := database.Connect(mongoURI, dbName)
 	if err != nil {
