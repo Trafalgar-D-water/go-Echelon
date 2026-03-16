@@ -1,0 +1,150 @@
+basePath: /api/v1
+definitions:
+  github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.SignUpRequest:
+    properties:
+      dob:
+        type: string
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        type: string
+    required:
+    - dob
+    - email
+    - password
+    - username
+    type: object
+  github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.VerifyRequest:
+    properties:
+      email:
+        type: string
+      otp:
+        type: string
+    required:
+    - email
+    - otp
+    type: object
+  pkg_delta_routes_users.SignUpRequest:
+    properties:
+      dob:
+        type: string
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        type: string
+    required:
+    - dob
+    - email
+    - password
+    - username
+    type: object
+  pkg_delta_routes_users.VerifyRequest:
+    properties:
+      email:
+        type: string
+      otp:
+        type: string
+    required:
+    - email
+    - otp
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@go-echelon.com
+    name: API Support
+  description: This is the REST API server for the Go-Echelon backend.
+  termsOfService: http://swagger.io/terms/
+  title: Go-Echelon API (Delta)
+  version: "1.0"
+paths:
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account, generates a verification OTP, and sends
+        the OTP to the user's email asynchronously.
+      parameters:
+      - description: User Registration Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/pkg_delta_routes_users.SignUpRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Email already registered
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new user
+      tags:
+      - users
+  /users/verify:
+    post:
+      consumes:
+      - application/json
+      description: Validates the 6-digit OTP code sent to the user's email and marks
+        the account as verified.
+      parameters:
+      - description: OTP Verification Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/pkg_delta_routes_users.VerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account verified successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid email or OTP code
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to process verification
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Verify OTP Code
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

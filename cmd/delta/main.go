@@ -8,8 +8,25 @@ import (
 	"github.com/go-Echelon/go-Echelon/pkg/core/database"
 	"github.com/go-Echelon/go-Echelon/pkg/delta/middleware"
 	"github.com/go-Echelon/go-Echelon/pkg/delta/routes"
+
+	// Swagger API Docs
+	_ "github.com/go-Echelon/go-Echelon/api"
 )
 
+// @title           Go-Echelon API (Delta)
+// @version         1.0
+// @description     This is the REST API server for the Go-Echelon backend.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.email  support@go-echelon.com
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	// TODO: Load from Echelon.toml config
 	mongoURI := "mongodb://localhost:27017"

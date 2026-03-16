@@ -24,7 +24,17 @@ type SignUpRequest struct {
 	DOB      string `json:"dob" binding:"required"`
 }
 
-// create handles POST /api/v1/users (user registration).
+// @Summary      Register a new user
+// @Description  Creates a new user account, generates a verification OTP, and sends the OTP to the user's email asynchronously.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        request body users.SignUpRequest true "User Registration Details"
+// @Success      201  {object}  map[string]interface{} "User created successfully"
+// @Failure      400  {object}  map[string]interface{} "Invalid input"
+// @Failure      409  {object}  map[string]interface{} "Email already registered"
+// @Failure      500  {object}  map[string]interface{} "Internal server error"
+// @Router       /users [post]
 func create(c *gin.Context) {
 	var req SignUpRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -84,7 +94,6 @@ func create(c *gin.Context) {
 		return
 	}
 
-	// Send OTP Email asynchronously using the direct email package
 	go func() {
 		if err := email.SendOTP(user.Email, otp); err != nil {
 			log.Printf("Failed to send OTP to %s: %v\n", user.Email, err)

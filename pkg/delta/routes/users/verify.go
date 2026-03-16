@@ -15,7 +15,17 @@ type VerifyRequest struct {
 	OTP   string `json:"otp" binding:"required,len=6"`
 }
 
-// verifyOTP handles POST /api/v1/users/verify
+// @Summary      Verify OTP Code
+// @Description  Validates the 6-digit OTP code sent to the user's email and marks the account as verified.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        request body users.VerifyRequest true "OTP Verification Details"
+// @Success      200  {object}  map[string]interface{} "Account verified successfully"
+// @Failure      400  {object}  map[string]interface{} "Invalid input"
+// @Failure      401  {object}  map[string]interface{} "Invalid email or OTP code"
+// @Failure      500  {object}  map[string]interface{} "Failed to process verification"
+// @Router       /users/verify [post]
 func verifyOTP(c *gin.Context) {
 	var req VerifyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -29,20 +39,18 @@ func verifyOTP(c *gin.Context) {
 	db := getDB(c)
 	coll := db.Users()
 
-	// 1. Find a user matching BOTH the email and the exact OTP
 	filter := bson.M{
 		"email": req.Email,
 		"otp":   req.OTP,
 	}
 
-	// 2. We want to update `is_verified` to true, and immediately clear the OTP so it can't be reused
 	update := bson.M{
 		"$set": bson.M{
 			"is_verified": true,
 			"updated_at":  time.Now().UTC(),
 		},
 		"$unset": bson.M{
-			"otp": "", // Removes the OTP field from the database
+			"otp": "",
 		},
 	}
 
@@ -53,7 +61,6 @@ func verifyOTP(c *gin.Context) {
 	}
 
 	if result.MatchedCount == 0 {
-		// If nothing matched, either the email is wrong, the user is already verified, or the OTP is wrong
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or OTP code"})
 		return
 	}
