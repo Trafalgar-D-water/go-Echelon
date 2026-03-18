@@ -89,16 +89,17 @@ func create(c *gin.Context) {
 		UpdatedAt:  time.Now().UTC(),
 	}
 
+	// Send OTP email first to ensure it succeeds before saving the user
+	if err := email.SendOTP(user.Email, otp); err != nil {
+		log.Printf("Failed to send OTP to %s: %v\n", user.Email, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email. User not created."})
+		return
+	}
+
 	if _, err = coll.InsertOne(ctx, user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user: " + err.Error()})
 		return
 	}
-
-	go func() {
-		if err := email.SendOTP(user.Email, otp); err != nil {
-			log.Printf("Failed to send OTP to %s: %v\n", user.Email, err)
-		}
-	}()
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "User created successfully. Please check your email for the OTP to verify your account.",

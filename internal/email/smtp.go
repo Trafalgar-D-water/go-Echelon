@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 
 	brevo "github.com/getbrevo/brevo-go/lib"
+	"github.com/go-Echelon/go-Echelon/pkg/core/config"
 )
 
 // SendOTP sends an OTP email directly using the Brevo API client
 func SendOTP(recipientEmail, otp string) error {
 	ctx := context.Background()
 	cfg := brevo.NewConfiguration()
-	cfg.AddDefaultHeader("api-key", os.Getenv("BREVO_API_KEY")) // TODO: take it from env
+	cfg.AddDefaultHeader("api-key", config.GetConfig().BrevoAPIKey)
 
 	client := brevo.NewAPIClient(cfg)
 

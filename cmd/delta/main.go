@@ -9,6 +9,8 @@ import (
 	"github.com/go-Echelon/go-Echelon/pkg/delta/middleware"
 	"github.com/go-Echelon/go-Echelon/pkg/delta/routes"
 
+	"github.com/go-Echelon/go-Echelon/pkg/core/config"
+
 	// Swagger API Docs
 	_ "github.com/go-Echelon/go-Echelon/api"
 )
@@ -28,20 +30,18 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	// TODO: Load from Echelon.toml config
-	mongoURI := "mongodb://localhost:27017"
-	dbName := "echelon_db"
-	port := "8080"
+	// Load Configuration
+	cfg := config.LoadConfig()
 
 	log.Println("🔌 Connecting to MongoDB...")
 
-	db, err := database.Connect(mongoURI, dbName)
+	db, err := database.Connect(cfg.MongoURI, cfg.DBName)
 	if err != nil {
 		fmt.Printf("Failed to connect to database: %v\n", err)
 		return
 	}
 
-	log.Printf("✅ MongoDB connected: %s/%s\n", mongoURI, dbName)
+	log.Printf("✅ MongoDB connected: %s/%s\n", cfg.MongoURI, cfg.DBName)
 
 	// Gin Setup
 	gin.SetMode(gin.DebugMode)
@@ -61,9 +61,9 @@ func main() {
 	routes.RegisterRoutes(r, db)
 
 	// Start Server
-	log.Printf("🚀 Gin server running on http://localhost:%s", port)
+	log.Printf("🚀 Gin server running on http://localhost:%s", cfg.Port)
 
-	if err := r.Run(":" + port); err != nil {
+	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("❌ Server failed to start: %v", err)
 	}
 }
