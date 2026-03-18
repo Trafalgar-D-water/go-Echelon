@@ -6,6 +6,7 @@ const (
 	UsersCollection    = "users"
 	ChannelsCollection = "channels"
 	MessagesCollection = "messages"
+	SessionsCollection = "sessions"
 )
 
 func (d *Database) Users() *mongo.Collection {
@@ -18,4 +19,8 @@ func (d *Database) Channels() *mongo.Collection {
 
 func (d *Database) Messages() *mongo.Collection {
 	return d.Mongo.Database(d.DBName).Collection(MessagesCollection)
+}
+
+func (d *Database) Sessions() *mongo.Collection {
+	return d.Mongo.Database(d.DBName).Collection(SessionsCollection)
 }

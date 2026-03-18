@@ -2,6 +2,8 @@ package users
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math/rand"
@@ -11,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-Echelon/go-Echelon/internal/email"
 	"github.com/go-Echelon/go-Echelon/pkg/core/models"
+	"github.com/go-Echelon/go-Echelon/pkg/delta/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
@@ -101,8 +104,55 @@ func create(c *gin.Context) {
 		return
 	}
 
+	accessToken, err := util.GenerateAccessToken(user.ID.Hex())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user: " + err.Error()})
+	}
+
+	refreshToken, err := util.GenerateRefreshToken(user.ID.Hex())
+	fmt.Println(accessToken, "This is my access token")
+	fmt.Println(refreshToken, "This is my refresh token")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user: " + err.Error()})
+	}
+
+	hash := sha256.Sum256([]byte(refreshToken))
+	hashedToken := hex.EncodeToString(hash[:])
+
+	hashedRefreshToken, err := bcrypt.GenerateFromPassword([]byte(hashedToken), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to hash refresh token"})
+		return
+	}
+
+	fmt.Println(string(hashedRefreshToken), "This is my hashed refresh token")
+	session := &models.Session{
+		ID:           primitive.NewObjectID(),
+		UserID:       user.ID.Hex(),
+		RefreshToken: string(hashedRefreshToken),
+		UserAgent:    c.Request.UserAgent(),
+		IP:           c.ClientIP(),
+		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour),
+		CreatedAt:    time.Now(),
+	}
+
+	_, err = db.Sessions().InsertOne(ctx, session)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to create session: " + err.Error()})
+		return
+	}
+	c.SetCookie(
+		"refreshToken",
+		refreshToken,
+		7*24*60*60,
+		"/",
+		"",
+		true,
+		true,
+	)
+
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "User created successfully. Please check your email for the OTP to verify your account.",
-		"user":    user,
+		"message":     "User created successfully. Please check your email for the OTP to verify your account.",
+		"accessToken": accessToken,
 	})
 }

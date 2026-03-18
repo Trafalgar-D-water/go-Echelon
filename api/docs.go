@@ -39,7 +39,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.SignUpRequest"
+                            "$ref": "#/definitions/pkg_delta_routes_users.SignUpRequest"
                         }
                     }
                 ],
