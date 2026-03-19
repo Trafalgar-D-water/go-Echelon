@@ -33,7 +33,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg_delta_routes_users.SignUpRequest"
+                            "$ref": "#/definitions/github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.SignUpRequest"
                         }
                     }
                 ],
@@ -69,6 +69,48 @@
                 }
             }
         },
+        "/users/refresh": {
+            "get": {
+                "description": "Validates refresh token from cookie, rotates it, and returns a new access token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Refresh Access Token",
+                "responses": {
+                    "200": {
+                        "description": "New access token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid or missing refresh token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Token mismatch or unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/users/verify": {
             "post": {
                 "description": "Validates the 6-digit OTP code sent to the user's email and marks the account as verified.",
@@ -89,7 +131,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.VerifyRequest"
+                            "$ref": "#/definitions/pkg_delta_routes_users.VerifyRequest"
                         }
                     }
                 ],
