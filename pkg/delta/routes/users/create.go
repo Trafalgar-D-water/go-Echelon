@@ -110,8 +110,6 @@ func create(c *gin.Context) {
 	}
 
 	refreshToken, err := util.GenerateRefreshToken(user.ID.Hex())
-	fmt.Println(accessToken, "This is my access token")
-	fmt.Println(refreshToken, "This is my refresh token")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user: " + err.Error()})
 	}
@@ -125,7 +123,6 @@ func create(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(string(hashedRefreshToken), "This is my hashed refresh token")
 	session := &models.Session{
 		ID:           primitive.NewObjectID(),
 		UserID:       user.ID.Hex(),

@@ -76,7 +76,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/pkg_delta_routes_users.SignUpRequest'
+          $ref: '#/definitions/github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.SignUpRequest'
       produces:
       - application/json
       responses:
@@ -103,6 +103,36 @@ paths:
       summary: Register a new user
       tags:
       - users
+  /users/refresh:
+    get:
+      description: Validates refresh token from cookie, rotates it, and returns a
+        new access token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New access token
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid or missing refresh token
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Token mismatch or unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh Access Token
+      tags:
+      - users
   /users/verify:
     post:
       consumes:
@@ -115,7 +145,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.VerifyRequest'
+          $ref: '#/definitions/pkg_delta_routes_users.VerifyRequest'
       produces:
       - application/json
       responses:
