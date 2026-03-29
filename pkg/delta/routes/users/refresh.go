@@ -10,10 +10,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-Echelon/go-Echelon/pkg/core/models"
 	"github.com/go-Echelon/go-Echelon/pkg/delta/util"
 	"github.com/golang-jwt/jwt/v5"
-	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -53,13 +51,12 @@ func refresh(c *gin.Context) {
 
 	db := getDB(c)
 
-	coll := db.Sessions()
+	sessionStore := db.Sessions()
 
 	hash := sha256.Sum256([]byte(refreshToken))
 	hashedToken := hex.EncodeToString(hash[:])
 
-	var session models.Session
-	err = coll.FindOne(ctx, bson.M{"userId": userID}).Decode(&session)
+	session, err := sessionStore.GetSessionByUserID(ctx, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "session not found"})
 		return
@@ -85,12 +82,7 @@ func refresh(c *gin.Context) {
 
 	newBcrypt, _ := bcrypt.GenerateFromPassword([]byte(newHashedToken), bcrypt.DefaultCost)
 
-	_, err = coll.UpdateOne(ctx,
-		bson.M{"_id": session.ID},
-		bson.M{
-			"$set": bson.M{"refreshToken": string(newBcrypt),
-				"expiresAt": time.Now().Add(7 * 24 * time.Hour)},
-		})
+	err = sessionStore.UpdateSession(ctx, session.ID.Hex(), string(newBcrypt), time.Now().Add(7*24*time.Hour))
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

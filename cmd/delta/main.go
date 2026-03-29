@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-Echelon/go-Echelon/pkg/core/database"
+	"github.com/go-Echelon/go-Echelon/pkg/core/database/drivers"
 	"github.com/go-Echelon/go-Echelon/pkg/delta/middleware"
 	"github.com/go-Echelon/go-Echelon/pkg/delta/routes"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/go-Echelon/go-Echelon/pkg/core/config"
 
@@ -35,14 +39,26 @@ func main() {
 
 	log.Println("🔌 Connecting to MongoDB...")
 
-	db, err := database.Connect(cfg.MongoURI, cfg.DBName)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	clientOptions := options.Client().ApplyURI(cfg.MongoURI)
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		fmt.Printf("Failed to connect to database: %v\n", err)
+		return
+	}
+	defer client.Disconnect(context.Background())
+
+	// Ping the DB to ensure connection is actually successful
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		fmt.Printf("Failed to ping database: %v\n", err)
 		return
 	}
 
 	log.Printf("✅ MongoDB connected: %s/%s\n", cfg.MongoURI, cfg.DBName)
 
+	db := drivers.New(client, cfg.DBName)
 	// Gin Setup
 	gin.SetMode(gin.DebugMode)
 	r := gin.New()

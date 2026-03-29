@@ -10,7 +10,7 @@ import (
 )
 
 // RegisterRoutes registers all API route groups on the engine.
-func RegisterRoutes(r *gin.Engine, db *database.Database) {
+func RegisterRoutes(r *gin.Engine, db database.Database) {
 	// Swagger UI Route
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
