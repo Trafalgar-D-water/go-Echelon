@@ -9,7 +9,7 @@ const dbKey = "db"
 
 // RegisterRoutes mounts all user-related routes onto /api/v1/users
 // and /api/v1/auth/session.
-func RegisterRoutes(r *gin.RouterGroup, db *database.Database) {
+func RegisterRoutes(r *gin.RouterGroup, db database.Database) {
 	// Inject database into gin context for all user handlers
 	injectDB := func(c *gin.Context) {
 		c.Set(dbKey, db)
@@ -27,6 +27,6 @@ func RegisterRoutes(r *gin.RouterGroup, db *database.Database) {
 }
 
 // getDB retrieves the database from gin context
-func getDB(c *gin.Context) *database.Database {
-	return c.MustGet(dbKey).(*database.Database)
+func getDB(c *gin.Context) database.Database {
+	return c.MustGet(dbKey).(database.Database)
 }

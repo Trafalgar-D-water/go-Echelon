@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 // VerifyRequest expects the email and the OTP entered by the user
@@ -37,30 +36,15 @@ func verifyOTP(c *gin.Context) {
 	defer cancel()
 
 	db := getDB(c)
-	coll := db.Users()
+	userStore := db.Users()
 
-	filter := bson.M{
-		"email": req.Email,
-		"otp":   req.OTP,
-	}
-
-	update := bson.M{
-		"$set": bson.M{
-			"is_verified": true,
-			"updated_at":  time.Now().UTC(),
-		},
-		"$unset": bson.M{
-			"otp": "",
-		},
-	}
-
-	result, err := coll.UpdateOne(ctx, filter, update)
+	success, err := userStore.VerifyUserOTP(ctx, req.Email, req.OTP)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process verification"})
 		return
 	}
 
-	if result.MatchedCount == 0 {
+	if !success {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or OTP code"})
 		return
 	}

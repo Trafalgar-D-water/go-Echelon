@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-Echelon/go-Echelon/pkg/core/models"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -31,11 +29,10 @@ func login(c *gin.Context) {
 	defer cancel()
 
 	db := getDB(c)
-	coll := db.Users()
+	userStore := db.Users()
 
 	// Find user by email
-	var user models.User
-	err := coll.FindOne(ctx, bson.M{"email": req.Email}).Decode(&user)
+	user, err := userStore.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})

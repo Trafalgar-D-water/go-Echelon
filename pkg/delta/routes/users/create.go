@@ -14,7 +14,6 @@ import (
 	"github.com/go-Echelon/go-Echelon/internal/email"
 	"github.com/go-Echelon/go-Echelon/pkg/core/models"
 	"github.com/go-Echelon/go-Echelon/pkg/delta/util"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -56,9 +55,11 @@ func create(c *gin.Context) {
 	defer cancel()
 
 	db := getDB(c)
-	coll := db.Users()
+	userStore := db.Users()
+	sessionStore := db.Sessions()
+
 	// Check if user already exists
-	count, err := coll.CountDocuments(ctx, bson.M{"email": req.Email})
+	count, err := userStore.CountByEmail(ctx, req.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error: " + err.Error()})
 		return
@@ -99,7 +100,8 @@ func create(c *gin.Context) {
 		return
 	}
 
-	if _, err = coll.InsertOne(ctx, user); err != nil {
+	err = userStore.CreateUser(ctx, user)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user: " + err.Error()})
 		return
 	}
@@ -133,7 +135,7 @@ func create(c *gin.Context) {
 		CreatedAt:    time.Now(),
 	}
 
-	_, err = db.Sessions().InsertOne(ctx, session)
+	_, err = sessionStore.CreateSession(ctx, session)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to create session: " + err.Error()})
 		return
