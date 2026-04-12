@@ -1,5 +1,15 @@
 basePath: /api/v1
 definitions:
+  github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
   github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.SignUpRequest:
     properties:
       dob:
@@ -26,6 +36,16 @@ definitions:
     required:
     - email
     - otp
+    type: object
+  pkg_delta_routes_users.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
     type: object
   pkg_delta_routes_users.SignUpRequest:
     properties:
@@ -64,6 +84,60 @@ info:
   title: Go-Echelon API (Delta)
   version: "1.0"
 paths:
+  /auth/session/login:
+    post:
+      consumes:
+      - application/json
+      description: Login a User, generates a verification OTP, and sends the OTP to
+        the user's email asynchronously.
+      parameters:
+      - description: User Login Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Email already registered
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login a User
+      tags:
+      - users
+  /auth/session/logout:
+    post:
+      description: Clears the refresh token cookie and removes the active session
+        from the database.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logged out successfully
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Logout User
+      tags:
+      - users
   /users:
     post:
       consumes:

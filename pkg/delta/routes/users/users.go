@@ -22,6 +22,7 @@ func RegisterRoutes(r *gin.RouterGroup, db database.Database) {
 		userRoutes.POST("/auth/session/login", login)
 		userRoutes.GET("/users/refresh", refresh)
 		userRoutes.GET("/users/:id", fetch)
+		userRoutes.POST("/auth/session/logout", logout)
 		userRoutes.POST("/users/verify", verifyOTP) // OTP Verification Endpoint
 	}
 }

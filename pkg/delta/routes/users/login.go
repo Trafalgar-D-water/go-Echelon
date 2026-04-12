@@ -17,7 +17,17 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// login handles POST /api/v1/auth/session/login.
+// @Summary      Login a User
+// @Description  Login a User, generates a verification OTP, and sends the OTP to the user's email asynchronously.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        request body users.LoginRequest true "User Login Details"
+// @Success      201  {object}  map[string]interface{} "User created successfully"
+// @Failure      400  {object}  map[string]interface{} "Invalid input"
+// @Failure      409  {object}  map[string]interface{} "Email already registered"
+// @Failure      500  {object}  map[string]interface{} "Internal server error"
+// @Router       /auth/session/login [post]
 func login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

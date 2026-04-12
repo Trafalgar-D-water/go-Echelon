@@ -2,11 +2,12 @@ package mongodb
 
 import (
 	"context"
+	"time"
+
 	"github.com/go-Echelon/go-Echelon/pkg/core/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"time"
 )
 
 type SessionStore struct {
@@ -43,5 +44,10 @@ func (s *SessionStore) UpdateSession(ctx context.Context, sessionID string, newR
 				"expiresAt":    expiresAt,
 			},
 		})
+	return err
+}
+
+func (s *SessionStore) DeleteSessionByUserID(ctx context.Context, userID string) error {
+	_, err := s.Collection.DeleteOne(ctx, bson.M{"userId": userID})
 	return err
 }
