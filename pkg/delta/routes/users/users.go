@@ -3,6 +3,7 @@ package users
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-Echelon/go-Echelon/pkg/core/database"
+	"github.com/go-Echelon/go-Echelon/pkg/delta/middleware"
 )
 
 const dbKey = "db"
@@ -16,14 +17,28 @@ func RegisterRoutes(r *gin.RouterGroup, db database.Database) {
 		c.Next()
 	}
 
+	// PUBLIC ROUTES
 	userRoutes := r.Group("", injectDB)
 	{
 		userRoutes.POST("/users", create)
 		userRoutes.POST("/auth/session/login", login)
 		userRoutes.GET("/users/refresh", refresh)
-		userRoutes.GET("/users/:id", fetch)
-		userRoutes.POST("/auth/session/logout", logout)
 		userRoutes.POST("/users/verify", verifyOTP) // OTP Verification Endpoint
+	}
+
+	// PROTECTED ROUTES (Requires JWT Access Token)
+	protected := r.Group("", injectDB, middleware.Auth())
+	{
+		protected.GET("/users/@me/relationships", FetchMyRelationships)
+		protected.GET("/users/search", searchUser)
+		protected.GET("/users/:id", fetch)
+		protected.POST("/auth/session/logout", logout)
+		
+		// Relationships 
+		protected.POST("/users/@me/relationships", SendRelationshipRequest)
+		protected.PUT("/users/@me/relationships/:id", AcceptFriendRequest)
+		// Assuming you will add these handlers soon!
+		// protected.DELETE("/users/@me/relationships/:id", RemoveRelationship)
 	}
 }
 

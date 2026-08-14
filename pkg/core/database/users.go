@@ -12,4 +12,5 @@ type UserStore interface {
 	CountByEmail(ctx context.Context, email string) (int64, error)
 	GetUserByID(ctx context.Context, id string) (*models.User, error)
 	VerifyUserOTP(ctx context.Context, email string, otp string) (bool, error)
+	SearchUsers(ctx context.Context, query string) ([]*models.User, error)
 }

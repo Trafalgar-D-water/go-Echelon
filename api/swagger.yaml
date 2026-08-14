@@ -88,20 +88,20 @@ paths:
     post:
       consumes:
       - application/json
-      description: Login a User, generates a verification OTP, and sends the OTP to
-        the user's email asynchronously.
+      description: Authenticates a user, generates access and refresh tokens, and
+        secures the session.
       parameters:
       - description: User Login Details
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.LoginRequest'
+          $ref: '#/definitions/pkg_delta_routes_users.LoginRequest'
       produces:
       - application/json
       responses:
-        "201":
-          description: User created successfully
+        "200":
+          description: Login successful
           schema:
             additionalProperties: true
             type: object
@@ -110,8 +110,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
-        "409":
-          description: Email already registered
+        "401":
+          description: Invalid email or password
           schema:
             additionalProperties: true
             type: object
@@ -150,7 +150,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/pkg_delta_routes_users.SignUpRequest'
+          $ref: '#/definitions/github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.SignUpRequest'
       produces:
       - application/json
       responses:
@@ -205,6 +205,47 @@ paths:
             additionalProperties: true
             type: object
       summary: Refresh Access Token
+      tags:
+      - users
+  /users/search:
+    get:
+      description: Search for users by their username using a case-insensitive match.
+        Requires JWT authentication.
+      parameters:
+      - description: The username to search for (minimum 2 characters)
+        in: query
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns an array of clean UserSearchResult objects
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid query or missing username
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized Access
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Search Users
       tags:
       - users
   /users/verify:

@@ -70,3 +70,21 @@ func (s *UserStore) VerifyUserOTP(ctx context.Context, email string, otp string)
 
 	return result.MatchedCount > 0, nil
 }
+
+func (s *UserStore) SearchUsers(ctx context.Context, query string) ([]*models.User, error) {
+	filter := bson.M{
+		"username": bson.M{"$regex": query, "$options": "i"},
+	}
+
+	cursor, err := s.Collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var users []*models.User
+	if err := cursor.All(ctx, &users); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
