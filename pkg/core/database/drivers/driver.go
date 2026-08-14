@@ -10,8 +10,9 @@ type MongoDB struct {
 	client *mongo.Client
 	db     *mongo.Database
 
-	userStore    database.UserStore
-	sessionStore database.SessionStore
+	userStore         database.UserStore
+	sessionStore      database.SessionStore
+	relationshipStore database.RelationshipStore
 }
 
 func New(client *mongo.Client, dbName string) *MongoDB {
@@ -28,6 +29,10 @@ func New(client *mongo.Client, dbName string) *MongoDB {
 		sessionStore: &mongodb.SessionStore{
 			Collection: db.Collection("sessions"),
 		},
+
+		relationshipStore: &mongodb.RelationshipStore{
+			Collection: db.Collection("relationships"),
+		},
 	}
 }
 
@@ -37,4 +42,8 @@ func (m *MongoDB) Users() database.UserStore {
 
 func (m *MongoDB) Sessions() database.SessionStore {
 	return m.sessionStore
+}
+
+func (m *MongoDB) Relationships() database.RelationshipStore {
+	return m.relationshipStore
 }

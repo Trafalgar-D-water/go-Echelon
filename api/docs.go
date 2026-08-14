@@ -21,7 +21,7 @@ const docTemplate = `{
     "paths": {
         "/auth/session/login": {
             "post": {
-                "description": "Login a User, generates a verification OTP, and sends the OTP to the user's email asynchronously.",
+                "description": "Authenticates a user, generates access and refresh tokens, and secures the session.",
                 "consumes": [
                     "application/json"
                 ],
@@ -39,13 +39,13 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.LoginRequest"
+                            "$ref": "#/definitions/pkg_delta_routes_users.LoginRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "User created successfully",
+                    "200": {
+                        "description": "Login successful",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -58,8 +58,8 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     },
-                    "409": {
-                        "description": "Email already registered",
+                    "401": {
+                        "description": "Invalid email or password",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -116,7 +116,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg_delta_routes_users.SignUpRequest"
+                            "$ref": "#/definitions/github_com_go-Echelon_go-Echelon_pkg_delta_routes_users.SignUpRequest"
                         }
                     }
                 ],
@@ -189,6 +189,68 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/users/search": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Search for users by their username using a case-insensitive match. Requires JWT authentication.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Search Users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "The username to search for (minimum 2 characters)",
+                        "name": "username",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returns an array of clean UserSearchResult objects",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid query or missing username",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized Access",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Database error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
