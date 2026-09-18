@@ -6,6 +6,7 @@ import (
 	"log"
 
 	brevo "github.com/getbrevo/brevo-go/lib"
+
 	"github.com/go-Echelon/go-Echelon/pkg/core/config"
 )
 

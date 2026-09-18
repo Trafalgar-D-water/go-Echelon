@@ -9,7 +9,7 @@ import (
 type Session struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty"`
 	UserID       string             `bson:"userId" json:"userID"`
-	RefreshToken string             `bson:"refreshToken" json:"refreshToken"`
+	RefreshToken string             `bson:"refreshToken" json:"-"`
 	UserAgent    string             `bson:"userAgent" json:"userAgent"`
 	IP           string             `bson:"ip" json:"ip"`
 	ExpiresAt    time.Time          `bson:"expiresAt" json:"expiresAt"`

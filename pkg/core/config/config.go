@@ -9,11 +9,15 @@ import (
 )
 
 type Config struct {
-	MongoURI    string `mapstructure:"MONGO_URI"`
-	DBName      string `mapstructure:"DB_NAME"`
-	Port        string `mapstructure:"PORT"`
-	JWTSecret   string `mapstructure:"JWT_SECRET"`
-	BrevoAPIKey string `mapstructure:"BREVO_API_KEY"`
+	MongoURI           string `mapstructure:"MONGO_URI"`
+	DBName             string `mapstructure:"DB_NAME"`
+	Port               string `mapstructure:"PORT"`
+	AccessTokenSecret  string `mapstructure:"ACCESS_TOKEN_SECRET"`
+	RefreshTokenSecret string `mapstructure:"REFRESH_TOKEN_SECRET"`
+	BrevoAPIKey        string `mapstructure:"BREVO_API_KEY"`
+	LogLevel           string `mapstructure:"LOG_LEVEL"`
+	LogFormat          string `mapstructure:"LOG_FORMAT"`
+	GinMode            string `mapstructure:"GIN_MODE"`
 }
 
 // globalConfig holds the latest configured values
@@ -22,8 +26,10 @@ var globalConfig *Config
 // LoadConfig initializes viper, reads the .env file, and sets up watch for changes.
 func LoadConfig() *Config {
 	viper.SetConfigFile(".env")
-	viper.AutomaticEnv() // also read from actual env variables
-	// Support nested env vars replacing . with _ if needed later
+	viper.SetDefault("LOG_LEVEL", "info")
+	viper.SetDefault("LOG_FORMAT", "json")
+	viper.SetDefault("GIN_MODE", "release")
+	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	if err := viper.ReadInConfig(); err != nil {

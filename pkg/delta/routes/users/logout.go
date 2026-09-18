@@ -3,11 +3,11 @@ package users
 import (
 	"context"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/go-Echelon/go-Echelon/pkg/delta/util"
 )
 
 // @Summary      Logout User
@@ -17,7 +17,7 @@ import (
 // @Success      200  {object}  map[string]interface{} "Logged out successfully"
 // @Router       /auth/session/logout [post]
 func logout(c *gin.Context) {
-	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+	c.SetCookie("refreshToken", "", -1, "/", "", true, true)
 
 	refreshToken, err := c.Cookie("refreshToken")
 	if err != nil {
@@ -25,20 +25,14 @@ func logout(c *gin.Context) {
 		return
 	}
 
-	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
-		return []byte(os.Getenv("REFRESH_SECRET")), nil
-	})
+	claims, err := util.ParseRefreshToken(refreshToken)
+	if err == nil {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
 
-	if err == nil && token.Valid {
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if ok {
-			if userID, exists := claims["userId"].(string); exists {
-				ctx, cancel := context.WithTimeout(c.Request.Context(), time.Second*5)
-				defer cancel()
-				db := getDB(c)
-				_ = db.Sessions().DeleteSessionByUserID(ctx, userID)
-			}
-		}
+		db := getDB(c)
+
+		_ = db.Sessions().DeleteSessionByUserID(ctx, claims.UserID)
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }

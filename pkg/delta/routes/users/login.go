@@ -2,13 +2,20 @@ package users
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/go-Echelon/go-Echelon/pkg/core/models"
+	"github.com/go-Echelon/go-Echelon/pkg/delta/middleware"
+	"github.com/go-Echelon/go-Echelon/pkg/delta/util"
 )
 
 // LoginRequest defines the expected JSON body for authentication.
@@ -29,6 +36,11 @@ type LoginRequest struct {
 // @Failure      500  {object}  map[string]interface{} "Internal server error"
 // @Router       /auth/session/login [post]
 func login(c *gin.Context) {
+	logger := middleware.Logger(c).With(
+		"component", "delta.users",
+		"operation", "login",
+	)
+
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
@@ -40,6 +52,7 @@ func login(c *gin.Context) {
 
 	db := getDB(c)
 	userStore := db.Users()
+	sessionStore := db.Sessions()
 
 	// Find user by email
 	user, err := userStore.GetUserByEmail(ctx, req.Email)
@@ -58,12 +71,91 @@ func login(c *gin.Context) {
 		return
 	}
 
-	// TODO: Generate real JWT token
-	token := "mock_jwt_token_" + user.ID.Hex()
+	refreshToken, err := util.GenerateRefreshToken(user.ID.Hex())
+
+	if err != nil {
+		logger.Error("failed to generate refresh token", "error", err)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Internal server error",
+		})
+		return
+	}
+
+	hash := sha256.Sum256([]byte(refreshToken))
+	hashedToken := hex.EncodeToString(hash[:])
+
+	hashedRefreshToken, err := bcrypt.GenerateFromPassword(
+		[]byte(hashedToken),
+		bcrypt.DefaultCost,
+	)
+	if err != nil {
+		logger.Error("failed to hash refresh token", "error", err)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
+		return
+	}
+
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	existingSession, err := sessionStore.GetSessionByUserID(ctx, user.ID.Hex())
+
+	switch {
+	case err == nil:
+		err = sessionStore.UpdateSession(
+			ctx,
+			existingSession.ID.Hex(),
+			string(hashedRefreshToken),
+			expiresAt,
+		)
+	case errors.Is(err, mongo.ErrNoDocuments):
+		_, err = sessionStore.CreateSession(ctx, &models.Session{
+			ID:           primitive.NewObjectID(),
+			UserID:       user.ID.Hex(),
+			RefreshToken: string(hashedRefreshToken),
+			UserAgent:    c.Request.UserAgent(),
+			IP:           c.ClientIP(),
+			ExpiresAt:    expiresAt,
+			CreatedAt:    time.Now(),
+		})
+	}
+
+	if err != nil {
+		logger.Error(
+			"failed to create or update user session",
+			"operation", "upsert_session",
+			"error", err,
+		)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
+		return
+	}
+
+	accessToken, err := util.GenerateAccessToken(user.ID.Hex())
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to genrate access token",
+		})
+		return
+	}
+
+	c.SetCookie(
+		"refreshToken",
+		refreshToken,
+		7*24*60*60,
+		"/",
+		"",
+		true,
+		true,
+	)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Login successful",
-		"token":   token,
-		"user":    user,
+		"message":     "login successful",
+		"accessToken": accessToken,
+		"user":        user,
 	})
 }

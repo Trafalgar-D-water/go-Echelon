@@ -4,15 +4,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-Echelon/go-Echelon/pkg/delta/util"
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/go-Echelon/go-Echelon/pkg/delta/util"
 )
 
 // @Summary      Refresh Access Token
@@ -30,24 +28,20 @@ func refresh(c *gin.Context) {
 
 	refreshToken, err := c.Cookie("refreshToken")
 
-	fmt.Println(refreshToken, "This is my refrsh token ")
-
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
-		return []byte(os.Getenv("REFRESH_SECRET")), nil
-	})
-
-	if err != nil || !token.Valid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "InValid Token bla bla "})
+	claims, err := util.ParseRefreshToken(refreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "invalid or expired refresh token",
+		})
 		return
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
-	userID := claims["userId"].(string)
+	userID := claims.UserID
 
 	db := getDB(c)
 

@@ -15,6 +15,7 @@ type User struct {
 	Online        bool               `bson:"online" json:"online"`
 	IsVerified    bool               `bson:"is_verified" json:"is_verified"`
 	OTP           string             `bson:"otp,omitempty" json:"-"`
+	OTPExpiresAt  *time.Time         `bson:"otp_expires_at,omitempty" json:"-"`
 	DOB           time.Time          `bson:"dob" json:"dob"`
 	CreatedAt     time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt     time.Time          `bson:"updated_at" json:"updated_at"`

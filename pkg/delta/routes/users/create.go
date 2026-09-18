@@ -4,18 +4,17 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
-	"log"
-	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-Echelon/go-Echelon/internal/email"
-	"github.com/go-Echelon/go-Echelon/pkg/core/models"
-	"github.com/go-Echelon/go-Echelon/pkg/delta/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/go-Echelon/go-Echelon/internal/email"
+	"github.com/go-Echelon/go-Echelon/pkg/core/models"
+	"github.com/go-Echelon/go-Echelon/pkg/delta/middleware"
+	"github.com/go-Echelon/go-Echelon/pkg/delta/util"
 )
 
 // SignUpRequest defines the expected JSON body for registration.
@@ -38,16 +37,30 @@ type SignUpRequest struct {
 // @Failure      500  {object}  map[string]interface{} "Internal server error"
 // @Router       /users [post]
 func create(c *gin.Context) {
+	logger := middleware.Logger(c).With(
+		"component", "delta.users",
+		"operation", "create_user",
+	)
+
+	logger.Info("registration requested")
+
 	var req SignUpRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
+		logger.Warn("registration validation failed", "error", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid input",
+		})
 		return
 	}
 
 	dob, err := time.Parse("2006-01-02", req.DOB)
-
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
+		logger.Warn("registration date of birth validation failed", "error", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid date of birth",
+		})
 		return
 	}
 
@@ -58,70 +71,129 @@ func create(c *gin.Context) {
 	userStore := db.Users()
 	sessionStore := db.Sessions()
 
-	// Check if user already exists
 	count, err := userStore.CountByEmail(ctx, req.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error: " + err.Error()})
+		logger.Error(
+			"failed to check whether email is registered",
+			"operation", "count_user_by_email",
+			"error", err,
+		)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
 		return
 	}
+
 	if count > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "This email is already registered"})
+		logger.Warn("registration rejected because email is already registered")
+
+		c.JSON(http.StatusConflict, gin.H{
+			"error": "this email is already registered",
+		})
 		return
 	}
 
-	// Hash password
-	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost) // put in the util function
+	hashedBytes, err := bcrypt.GenerateFromPassword(
+		[]byte(req.Password),
+		bcrypt.DefaultCost,
+	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		logger.Error("failed to hash user password", "error", err)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
 		return
 	}
 
-	// Generate 6-digit OTP
-	rand.Seed(time.Now().UnixNano())
-	otp := fmt.Sprintf("%06d", rand.Intn(1000000))
+	otp, err := util.GenerateVerificationOTP()
+	if err != nil {
+		logger.Error("failed to generate verification OTP", "error", err)
 
-	// Build user document
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
+		return
+	}
+
+	now := time.Now().UTC()
+	otpExpiresAt := now.Add(util.VerificationOTPLifetime)
+
 	user := &models.User{
-		ID:         primitive.NewObjectID(),
-		Username:   req.Username,
-		Email:      req.Email,
-		Password:   string(hashedBytes),
-		DOB:        dob,
-		IsVerified: false,
-		OTP:        otp,
-		CreatedAt:  time.Now().UTC(),
-		UpdatedAt:  time.Now().UTC(),
+		ID:           primitive.NewObjectID(),
+		Username:     req.Username,
+		Email:        req.Email,
+		Password:     string(hashedBytes),
+		DOB:          dob,
+		IsVerified:   false,
+		OTP:          otp,
+		OTPExpiresAt: &otpExpiresAt,
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 
-	// Send OTP email first to ensure it succeeds before saving the user
-	if err := email.SendOTP(user.Email, otp); err != nil {
-		log.Printf("Failed to send OTP to %s: %v\n", user.Email, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification email. User not created."})
+	if err := userStore.CreateUser(ctx, user); err != nil {
+		logger.Error(
+			"failed to create user",
+			"operation", "create_user",
+			"error", err,
+		)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
 		return
 	}
 
-	err = userStore.CreateUser(ctx, user)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user: " + err.Error()})
+	logger = logger.With("user_id", user.ID.Hex())
+
+	if err := email.SendOTP(user.Email, otp); err != nil {
+		logger.Error(
+			"failed to send verification email",
+			"operation", "send_otp",
+			"error", err,
+		)
+
+		c.JSON(http.StatusAccepted, gin.H{
+			"message": "account created; request a new verification code if it does not arrive",
+		})
 		return
 	}
 
 	accessToken, err := util.GenerateAccessToken(user.ID.Hex())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user: " + err.Error()})
+		logger.Error("failed to generate access token", "error", err)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
+		return
 	}
 
 	refreshToken, err := util.GenerateRefreshToken(user.ID.Hex())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user: " + err.Error()})
+		logger.Error("failed to generate refresh token", "error", err)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
+		return
 	}
 
 	hash := sha256.Sum256([]byte(refreshToken))
 	hashedToken := hex.EncodeToString(hash[:])
 
-	hashedRefreshToken, err := bcrypt.GenerateFromPassword([]byte(hashedToken), bcrypt.DefaultCost)
+	hashedRefreshToken, err := bcrypt.GenerateFromPassword(
+		[]byte(hashedToken),
+		bcrypt.DefaultCost,
+	)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "Failed to hash refresh token"})
+		logger.Error("failed to hash refresh token", "error", err)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
 		return
 	}
 
@@ -135,11 +207,21 @@ func create(c *gin.Context) {
 		CreatedAt:    time.Now(),
 	}
 
-	_, err = sessionStore.CreateSession(ctx, session)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "Failed to create session: " + err.Error()})
+	if _, err := sessionStore.CreateSession(ctx, session); err != nil {
+		logger.Error(
+			"failed to create user session",
+			"operation", "create_session",
+			"error", err,
+		)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
 		return
 	}
+
+	logger.Info("user registration completed")
+
 	c.SetCookie(
 		"refreshToken",
 		refreshToken,
@@ -151,7 +233,7 @@ func create(c *gin.Context) {
 	)
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message":     "User created successfully. Please check your email for the OTP to verify your account.",
+		"message":     "user created successfully; please check your email for the OTP",
 		"accessToken": accessToken,
 	})
 }

@@ -2,21 +2,21 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
+	"log/slog"
 	"time"
+	// Swagger API Docs
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-Echelon/go-Echelon/pkg/core/database/drivers"
-	"github.com/go-Echelon/go-Echelon/pkg/delta/middleware"
-	"github.com/go-Echelon/go-Echelon/pkg/delta/routes"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/go-Echelon/go-Echelon/pkg/core/config"
-
-	// Swagger API Docs
 	_ "github.com/go-Echelon/go-Echelon/api"
+	"github.com/go-Echelon/go-Echelon/pkg/core/config"
+	"github.com/go-Echelon/go-Echelon/pkg/core/database/drivers"
+	"github.com/go-Echelon/go-Echelon/pkg/core/observability"
+	"github.com/go-Echelon/go-Echelon/pkg/delta/middleware"
+	"github.com/go-Echelon/go-Echelon/pkg/delta/routes"
+	"github.com/go-Echelon/go-Echelon/pkg/delta/util"
 )
 
 // @title           Go-Echelon API (Delta)
@@ -37,14 +37,43 @@ func main() {
 	// Load Configuration
 	cfg := config.LoadConfig()
 
-	log.Println("🔌 Connecting to MongoDB...")
+	logger := observability.NewLogger(observability.Config{
+		Level:   cfg.LogLevel,
+		Format:  cfg.LogFormat,
+		Service: "delta",
+	})
+
+	slog.SetDefault(logger)
+	gin.SetMode(cfg.GinMode)
+
+	if err := util.ConfigureJWT(
+		cfg.AccessTokenSecret,
+		cfg.RefreshTokenSecret,
+	); err != nil {
+		logger.With(
+			"component", "delta.bootstrap",
+		).Error(
+			"invalid JWT configuration",
+			"error", err,
+		)
+		return
+	}
+
+	logger.With(
+		"component", "delta.bootstrap",
+	).Info("connecting to mongodb")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	clientOptions := options.Client().ApplyURI(cfg.MongoURI)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		fmt.Printf("Failed to connect to database: %v\n", err)
+		logger.With(
+			"component", "delta.bootstrap",
+		).Error(
+			"failed to connect to mongodb",
+			"error", err,
+		)
 		return
 	}
 	defer client.Disconnect(context.Background())
@@ -52,11 +81,21 @@ func main() {
 	// Ping the DB to ensure connection is actually successful
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		fmt.Printf("Failed to ping database: %v\n", err)
+		logger.With(
+			"component", "delta.bootstrap",
+		).Error(
+			"failed to ping mongodb",
+			"error", err,
+		)
 		return
 	}
 
-	log.Printf("✅ MongoDB connected: %s/%s\n", cfg.MongoURI, cfg.DBName)
+	logger.With(
+		"component", "delta.bootstrap",
+	).Info(
+		"mongodb connected",
+		"database", cfg.DBName,
+	)
 
 	db := drivers.New(client, cfg.DBName)
 	// Gin Setup
@@ -65,8 +104,8 @@ func main() {
 
 	// Middleware chain
 	r.Use(middleware.CORS())
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
+	r.Use(middleware.RequestLogger(logger))
+	r.Use(middleware.Recovery())
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -77,9 +116,19 @@ func main() {
 	routes.RegisterRoutes(r, db)
 
 	// Start Server
-	log.Printf("🚀 Gin server running on http://localhost:%s", cfg.Port)
+	logger.With(
+		"component", "delta.bootstrap",
+	).Info(
+		"delta server started",
+		"port", cfg.Port,
+	)
 
 	if err := r.Run(":" + cfg.Port); err != nil {
-		log.Fatalf("❌ Server failed to start: %v", err)
+		logger.With(
+			"component", "delta.bootstrap",
+		).Error(
+			"delta server stopped unexpectedly",
+			"error", err,
+		)
 	}
 }

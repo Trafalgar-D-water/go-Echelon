@@ -49,8 +49,10 @@ func (s *UserStore) GetUserByID(ctx context.Context, id string) (*models.User, e
 
 func (s *UserStore) VerifyUserOTP(ctx context.Context, email string, otp string) (bool, error) {
 	filter := bson.M{
-		"email": email,
-		"otp":   otp,
+		"email":          email,
+		"otp":            otp,
+		"is_verified":    false,
+		"otp_expires_at": bson.M{"$gt": time.Now().UTC()},
 	}
 
 	update := bson.M{
@@ -59,7 +61,8 @@ func (s *UserStore) VerifyUserOTP(ctx context.Context, email string, otp string)
 			"updated_at":  time.Now().UTC(),
 		},
 		"$unset": bson.M{
-			"otp": "",
+			"otp":            "",
+			"otp_expires_at": "",
 		},
 	}
 
