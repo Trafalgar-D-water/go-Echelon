@@ -105,4 +105,4 @@ Solid connections are implemented today; dashed connections are planned.
 
 - [Architecture overview](docs/architecture/README.md)
 - [ADR-001: modular monolith with service-ready boundaries](docs/decision/ADR-001.md)
-
+- [ADR-002: bitmask permissions with layered overrides](docs/decision/ADR-002.md)
