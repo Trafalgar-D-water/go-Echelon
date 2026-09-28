@@ -1,6 +1,7 @@
 package permissions
 
 type RolePermissionInput struct {
+	ID       string
 	Rank     int
 	Override Override
 }
