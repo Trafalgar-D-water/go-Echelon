@@ -30,4 +30,5 @@ type ChannelPermissionInput struct {
 
 	CanPublish bool
 	CanReceive bool
+	TimedOut   bool
 }
