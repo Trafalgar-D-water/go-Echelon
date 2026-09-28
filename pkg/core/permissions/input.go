@@ -32,3 +32,14 @@ type ChannelPermissionInput struct {
 	CanReceive bool
 	TimedOut   bool
 }
+
+type PermissionDelegationInput struct {
+	ActorPermissions Mask
+
+	ActorRank  int
+	TargetRank int
+
+	GrantedPermissions Mask
+
+	IsOwner bool
+}
