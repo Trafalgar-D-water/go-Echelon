@@ -14,7 +14,7 @@ import (
 //  3. Duplicate role IDs are rejected.
 //
 // The input slice is not modified.
-func SortRoles(roles []RolePermissionInput) ([]RolePermissionInput, error) {
+func sortRoles(roles []RolePermissionInput) ([]RolePermissionInput, error) {
 	sorted := append([]RolePermissionInput(nil), roles...)
 
 	seen := make(map[string]struct{}, len(sorted))

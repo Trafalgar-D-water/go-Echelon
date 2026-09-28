@@ -20,31 +20,31 @@ func ResolveServer(input ServerPermissionInput) PermissionValue {
 	value := FromRaw(uint64(input.DefaultPermissions))
 
 	// 5. Apply assigned role overrides
-	roles, err := SortRoles(input.Roles)
+	roles, err := sortRoles(input.Roles)
 
 	if err != nil {
 		return FromRaw(0)
 	}
 
 	for _, role := range roles {
-		value = role.Override.Apply(value)
+		value = role.Override.apply(value)
 	}
 
 	// 6. Apply publish restriction
 
 	if !input.CanPublish {
-		value.Revoke(Speak)
-		value.Revoke(Video)
+		value.revoke(Speak)
+		value.revoke(Video)
 	}
 
 	// 7. Apply receive restriction
 	if !input.CanReceive {
-		value.Revoke(Listen)
+		value.revoke(Listen)
 	}
 
 	// 8. Apply timeout restriction
 	if input.TimedOut {
-		value.Restrict(ALLOW_IN_TIMEOUT)
+		value.restrict(ALLOW_IN_TIMEOUT)
 	}
 
 	// 9. Return final permissions

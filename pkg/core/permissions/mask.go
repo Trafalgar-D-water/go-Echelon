@@ -14,21 +14,21 @@ func (m Mask) HasAll(required Mask) bool {
 }
 
 // Add enables the given permission.
-func (m *Mask) Add(permission Permission) {
+func (m *Mask) add(permission Permission) {
 	*m |= Mask(permission)
 }
 
 // Remove disables the given permission.
-func (m *Mask) Remove(permission Permission) {
+func (m *Mask) remove(permission Permission) {
 	*m &^= Mask(permission)
 }
 
 // GrantAllSafe enables all permissions in the safe permission range.
-func (m *Mask) GrantAllSafe() {
+func (m *Mask) grantAllSafe() {
 	*m = Mask(GrantAllSafe)
 }
 
 // Clear removes all permissions.
-func (m *Mask) Clear() {
+func (m *Mask) clear() {
 	*m = 0
 }
