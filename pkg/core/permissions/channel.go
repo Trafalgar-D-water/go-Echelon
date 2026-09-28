@@ -5,35 +5,35 @@ func ResolveChannel(input ChannelPermissionInput) PermissionValue {
 	value := input.ServerPermissions
 
 	// 2. Apply channel @everyone/default override.
-	value = input.DefaultOverride.Apply(value)
+	value = input.DefaultOverride.apply(value)
 
 	// 3. Apply channel role overrides.
-	roles, err := SortRoles(input.RoleOverrides)
+	roles, err := sortRoles(input.RoleOverrides)
 	if err != nil {
 		return FromRaw(0)
 	}
 
 	for _, role := range roles {
-		value = role.Override.Apply(value)
+		value = role.Override.apply(value)
 	}
 
 	// 4. Apply member-specific override.
-	value = input.MemberOverride.Apply(value)
+	value = input.MemberOverride.apply(value)
 
 	// 5. Apply publish restriction.
 	if !input.CanPublish {
-		value.Revoke(Speak)
-		value.Revoke(Video)
+		value.revoke(Speak)
+		value.revoke(Video)
 	}
 
 	// 6. Apply receive restriction.
 	if !input.CanReceive {
-		value.Revoke(Listen)
+		value.revoke(Listen)
 	}
 
 	// 7. Apply timeout restriction.
 	if input.TimedOut {
-		value.Restrict(ALLOW_IN_TIMEOUT)
+		value.restrict(ALLOW_IN_TIMEOUT)
 	}
 
 	// 8. If the user cannot view the channel,
