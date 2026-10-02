@@ -27,27 +27,28 @@ type SystemMessages struct {
 
 // Role represents a permission group within a server.
 type Role struct {
-	ID          ID         `bson:"_id,omitempty" json:"id"`
-	Name        string     `bson:"name" json:"name"`
-	Colour      *string    `bson:"colour,omitempty" json:"colour,omitempty"` // hex e.g. "#FF5733"
-	Hoist       bool       `bson:"hoist" json:"hoist"`                       // shown separately in member list
-	Rank        int        `bson:"rank" json:"rank"`                         // lower = higher priority
-	Permissions Permission `bson:"permissions" json:"permissions"`
+	ID               ID      `bson:"-" json:"id"`
+	Name             string  `bson:"name" json:"name"`
+	PermissionsAllow uint64  `bson:"permissions_allow" json:"permissions_allow"`
+	PermissionsDeny  uint64  `bson:"permissions_deny" json:"permissions_deny"`
+	Colour           *string `bson:"colour,omitempty" json:"colour,omitempty"`
+	Hoist            bool    `bson:"hoist" json:"hoist"`
+	Rank             int     `bson:"rank" json:"rank"`
 }
 
 // Server is the top-level community/guild.
 type Server struct {
-	ID             ID             `bson:"_id,omitempty" json:"id"`
-	OwnerID        ID             `bson:"owner_id" json:"owner_id"`
-	Name           string         `bson:"name" json:"name"`
-	Description    *string        `bson:"description,omitempty" json:"description,omitempty"`
-	IconID         *ID            `bson:"icon_id,omitempty" json:"icon_id,omitempty"`
-	BannerID       *ID            `bson:"banner_id,omitempty" json:"banner_id,omitempty"`
-	Categories     []Category     `bson:"categories" json:"categories"`
-	SystemMessages SystemMessages `bson:"system_messages" json:"system_messages"`
-	Roles          []Role         `bson:"roles" json:"roles"`
-	Flags          ServerFlags    `bson:"flags" json:"flags"`
-	NSFW           bool           `bson:"nsfw" json:"nsfw"`
-	CreatedAt      time.Time      `bson:"created_at" json:"created_at"`
-	UpdatedAt      time.Time      `bson:"updated_at" json:"updated_at"`
+	ID             ID              `bson:"_id,omitempty" json:"id"`
+	OwnerID        ID              `bson:"owner_id" json:"owner_id"`
+	Name           string          `bson:"name" json:"name"`
+	Description    *string         `bson:"description,omitempty" json:"description,omitempty"`
+	IconID         *ID             `bson:"icon_id,omitempty" json:"icon_id,omitempty"`
+	BannerID       *ID             `bson:"banner_id,omitempty" json:"banner_id,omitempty"`
+	Categories     []Category      `bson:"categories" json:"categories"`
+	SystemMessages SystemMessages  `bson:"system_messages" json:"system_messages"`
+	Roles          map[string]Role `bson:"roles" json:"roles"`
+	Flags          ServerFlags     `bson:"flags" json:"flags"`
+	NSFW           bool            `bson:"nsfw" json:"nsfw"`
+	CreatedAt      time.Time       `bson:"created_at" json:"created_at"`
+	UpdatedAt      time.Time       `bson:"updated_at" json:"updated_at"`
 }
